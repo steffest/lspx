@@ -1,0 +1,6 @@
+MAJOR = 0
+MINOR = 1
+PATCH = 3
+DEV = False
+VERSION = f'{MAJOR}.{MINOR}.{PATCH}'
+VERSION_FRIENDLY = f'LSPX v{VERSION}{'-dev' if DEV else ''}'

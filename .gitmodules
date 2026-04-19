@@ -1,0 +1,3 @@
+[submodule "openmpt-lspx"]
+	path = openmpt-lspx
+	url = https://github.com/dansalvato/openmpt-lspx
