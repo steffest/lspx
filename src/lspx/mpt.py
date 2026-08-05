@@ -168,6 +168,7 @@ class Frame:
     tick: int
     samples_per_tick: int
     ticks_per_row: int
+    tempo: int
     rows_per_beat: int
     rows_per_measure: int
     channels: list[ChannelData]
@@ -201,6 +202,7 @@ class Sample:
 _mpt.openmpt_module_get_current_channel_lsp.restype = CChannelData
 _mpt.openmpt_module_get_meta_lsp.restype = CMetadata
 _mpt.openmpt_module_get_sample_lsp.restype = CSample
+_mpt.openmpt_module_get_current_tempo2.restype = c_double
 
 
 class MPTMod:
@@ -231,6 +233,7 @@ class MPTMod:
             tick = tick + 1 if row == last_row else 0
             samples_per_tick = _mpt.openmpt_module_get_current_samples_per_tick(mod)
             ticks_per_row = _mpt.openmpt_module_get_current_speed(mod)
+            tempo = round(_mpt.openmpt_module_get_current_tempo2(mod))
             rows_per_beat = _mpt.openmpt_module_get_pattern_rows_per_beat(mod, pattern)
             rows_per_measure = _mpt.openmpt_module_get_pattern_rows_per_measure(mod, pattern)
             channels = list(ChannelData(_mpt.openmpt_module_get_current_channel_lsp(mod, i), i) for i in range(num_channels))
@@ -241,6 +244,7 @@ class MPTMod:
                 tick,
                 samples_per_tick,
                 ticks_per_row,
+                tempo,
                 rows_per_beat,
                 rows_per_measure,
                 channels))

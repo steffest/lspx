@@ -118,9 +118,12 @@ pip install ./lspx
 
 Building on Windows has been tested primarily with Clang, i.e. `CC=clang` and `CXX=clang++`.
 
+Tracker BPM changes are emitted automatically as LSP SetBPM commands. The
+initial BPM is stored in the LSP score header.
+
 ## Planned features (not yet supported)
 
-- LSP special commands (set BPM and set position)
+- LSP set-position support
 
 ## Issues
 

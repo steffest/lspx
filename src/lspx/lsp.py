@@ -771,6 +771,10 @@ class Module:
         byte_loop = 0
         word_loop = 0
         beat_index = 0
+        bpm = self.mpt_mod.frames[0].tempo
+        if not 0 < bpm <= 0xffff:
+            raise ValueError(f"Initial BPM {bpm} does not fit in the LSP header")
+        previous_bpm = bpm
         for i, frame in enumerate(self.mframes):
             if i == loop_index:
                 byte_loop = len(byte_stream)
@@ -797,6 +801,17 @@ class Module:
                 h, l = cmd_index // 256, cmd_index % 256
                 byte_stream += [0] * h + [l, 0x80 | (beat_index & 0x7f)]
                 beat_index += 1
+            # LSP runtime tempo changes carry a one-byte tracker BPM value.
+            frame_bpm = self.mpt_mod.frames[i].tempo
+            if not self.config.mod.mixer_experimental and frame_bpm != previous_bpm:
+                if not 0 < frame_bpm <= 0xff:
+                    raise ValueError(
+                        f"SetBPM value {frame_bpm} at frame {i} does not fit in one byte"
+                    )
+                cmd_index = cmd_table.index(esc_setbpm)
+                h, l = cmd_index // 256, cmd_index % 256
+                byte_stream += [0] * h + [l, frame_bpm]
+                previous_bpm = frame_bpm
             # Write command index, omitting index 0.
             # Each +256 index is a 00 byte, e.g. index 520 is 000008
             command = commands[i]
@@ -820,8 +835,6 @@ class Module:
         cmd_index = cmd_table.index(esc_rewind)
         h, l = cmd_index // 256, cmd_index % 256
         byte_stream += [0] * h + [l]
-        # Get BPM
-        bpm = self.mpt_mod.metadata.tempo
         if self.config.mod.mixer_experimental:
             # BPM is instead number of CIA clock cycles per buffer
             size, _ = self._get_best_buffer_size()
