@@ -17,6 +17,8 @@ def main() -> int:
     HELP_INPUT_FILE = "the input module file"
     HELP_OUTPUT = "specify output directory (default: current directory)"
     HELP_NTSC = "use NTSC clock rate (instead of PAL) when calculating Amiga period values"
+    HELP_GETPOS = "emit LSP GetPos commands so playback sequence/order position can be read by the replayer"
+    HELP_BEAT_EVENTS = "emit explicit tracker beat markers for the bundled player's lsp_get_beat function"
     HELP_MIN_RATE = "the target minimum sample rate at which samples play their lowest note"
     HELP_MAX_RATE = "the maximum sample rate at which samples will ever play their highest note"
     HELP_QUIET = "run silently (do not output any text to stdout)"
@@ -91,6 +93,8 @@ def main() -> int:
     cfg_group.add_argument('--cfg-ntsc', action='store_const', const=True, help=HELP_NTSC)
     cfg_group.add_argument('--cfg-min-rate', type=int, help=HELP_MIN_RATE, metavar='RATE')
     cfg_group.add_argument('--cfg-max-rate', type=int, help=HELP_MAX_RATE, metavar='RATE')
+    parser.add_argument('--getpos', action='store_const', const=True, default=None, help=HELP_GETPOS)
+    parser.add_argument('--beat-events', action='store_const', const=True, default=None, help=HELP_BEAT_EVENTS)
     parser.add_argument('input_file', type=Path, help=HELP_INPUT_FILE)
     parser.add_argument('-q', '--quiet', action='store_true', help=HELP_QUIET)
     parser.add_argument('-o', dest='output_dir', type=Path, metavar='DIRECTORY', default=Path.cwd(), help=HELP_OUTPUT)
@@ -118,6 +122,8 @@ def main() -> int:
         config = tomllib.loads(config_path.read_text())
     cfg_params = {
         'ntsc': args.cfg_ntsc,
+        'getpos': args.getpos,
+        'beat_events': args.beat_events,
         'min_rate': args.cfg_min_rate,
         'max_rate': args.cfg_max_rate,
     }

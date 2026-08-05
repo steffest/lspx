@@ -57,6 +57,8 @@ Options:
 - `-o DIRECTORY`: Specify output directory (default: current directory).
 - `--no-output`: Process only, do not output any files (dry run).
 - `--sample-info`: Print extra sample processing information.
+- `--getpos`: Emit LSP GetPos commands at module sequence/order boundaries, allowing the replayer's `LSP_MusicGetPos` function to report the current position.
+- `--beat-events`: Emit explicit tracker beat markers for the bundled player's `lsp_get_beat()` function. Beat values wrap every 128 beats. This extension reserves GetPos payloads `128..255`, matching the standard converter's `0..127` sequence-position limit.
 - `--version`: Print LSPX version number and exit.
 - `--sox-path`: Specify path to SoX executable instead of using system PATH.
 
@@ -118,7 +120,7 @@ Building on Windows has been tested primarily with Clang, i.e. `CC=clang` and `C
 
 ## Planned features (not yet supported)
 
-- LSP special commands (set BPM, get/set position)
+- LSP special commands (set BPM and set position)
 
 ## Issues
 

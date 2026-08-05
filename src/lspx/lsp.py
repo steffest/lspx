@@ -76,6 +76,14 @@ class ModuleConfig:
     mixer_experimental: bool = False
     sox_path: Path | None = None
 
+    getpos: bool = False
+    """Whether to emit LSP GetPos commands at module sequence (order)
+    boundaries."""
+
+    beat_events: bool = False
+    """Whether to emit explicit beat markers using the GetPos escape-command
+    extension understood by the bundled player."""
+
     @property
     def clock(self) -> int:
         """Returns the clock rate used to calculate period, based on PAL or
@@ -762,10 +770,33 @@ class Module:
         word_stream: list[int] = []
         byte_loop = 0
         word_loop = 0
+        beat_index = 0
         for i, frame in enumerate(self.mframes):
             if i == loop_index:
                 byte_loop = len(byte_stream)
                 word_loop = len(word_stream) * 2
+            # GetPos commands update the replay's current sequence number
+            # before the first audible tick of each module order.
+            if self.config.mod.getpos:
+                mpt_frame = self.mpt_mod.frames[i]
+                previous_order = self.mpt_mod.frames[i - 1].order if i > 0 else None
+                if mpt_frame.order != previous_order:
+                    if not 0 <= mpt_frame.order < 0x80:
+                        raise ValueError(
+                            f"GetPos sequence position {mpt_frame.order} exceeds the supported range 0..127"
+                        )
+                    cmd_index = cmd_table.index(esc_getpos)
+                    h, l = cmd_index // 256, cmd_index % 256
+                    byte_stream += [0] * h + [l, mpt_frame.order]
+            # Values with bit 7 set transport explicit beat markers without
+            # changing the LSP score header layout. The bundled player routes
+            # them separately from GetPos sequence values. The low seven bits
+            # contain the song's beat number, wrapping every 128 beats.
+            if self.config.mod.beat_events and frame.new_beat:
+                cmd_index = cmd_table.index(esc_getpos)
+                h, l = cmd_index // 256, cmd_index % 256
+                byte_stream += [0] * h + [l, 0x80 | (beat_index & 0x7f)]
+                beat_index += 1
             # Write command index, omitting index 0.
             # Each +256 index is a 00 byte, e.g. index 520 is 000008
             command = commands[i]
@@ -801,6 +832,7 @@ class Module:
                            esc_rewind,
                            esc_setbpm,
                            esc_getpos,
+                           int(self.config.mod.getpos or self.config.mod.beat_events),
                            list(self.msamples.values()),
                            minsts,
                            cmd_table,
@@ -871,6 +903,7 @@ class LspFile:
                  rewind: int,
                  setbpm: int,
                  getpos: int,
+                 support_flags: int,
                  samples: list[MSample],
                  minsts: list[MInstrument],
                  cmd_table: list[int],
@@ -882,6 +915,7 @@ class LspFile:
         self.esc_value_rewind = rewind
         self.esc_value_setbpm = setbpm
         self.esc_value_getpos = getpos
+        self.support_flags = support_flags
         self.frame_count = frame_count
         self.instrument_count = len(minsts)
         self.instruments = []
@@ -942,4 +976,3 @@ class LspFile:
         out += b''.join(word.to_bytes(2) for word in self.word_stream)
         out += b''.join(byte.to_bytes(1) for byte in self.byte_stream)
         return out
-
